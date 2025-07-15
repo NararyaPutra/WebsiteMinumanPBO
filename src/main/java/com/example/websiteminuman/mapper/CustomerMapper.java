@@ -1,13 +1,13 @@
-package com.example.websiteminuman.mapper;
+// package com.example.websiteminuman.mapper;
 
-import org.mapstruct.Mapper;
+// import org.mapstruct.Mapper;
 
-import com.example.websiteminuman.dto.CustomerDto;
-import com.example.websiteminuman.entities.Customer;
+// import com.example.websiteminuman.dto.CustomerDto;
+// import com.example.websiteminuman.entities.Customer;
 
-@Mapper(componentModel = "spring")
-public interface CustomerMapper {
-    CustomerDto toDto (Customer customer);
-    Customer toEntity (CustomerDto customerDto);
+// @Mapper(componentModel = "spring")
+// public interface CustomerMapper {
+//     CustomerDto toDto (Customer customer);
+//     Customer toEntity (CustomerDto customerDto);
 
-}
+// }

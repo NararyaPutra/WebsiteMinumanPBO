@@ -1,12 +1,12 @@
-package com.example.websiteminuman.mapper;
+// package com.example.websiteminuman.mapper;
 
-import org.mapstruct.Mapper;
+// import org.mapstruct.Mapper;
 
-import com.example.websiteminuman.dto.AdminDto;
-import com.example.websiteminuman.entities.Admin;
+// import com.example.websiteminuman.dto.AdminDto;
+// import com.example.websiteminuman.entities.Admin;
 
-@Mapper(componentModel = "spring")
-public interface AdminMapper {
-    AdminDto toDto(Admin admin);
-    Admin toEntity (AdminDto adminDto);
-}
+// @Mapper(componentModel = "spring")
+// public interface AdminMapper {
+//     AdminDto toDto(Admin admin);
+//     Admin toEntity (AdminDto adminDto);
+// }
