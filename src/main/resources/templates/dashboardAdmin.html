@@ -313,7 +313,6 @@
         }
       });
 
-    // Form Edit Submit
     document
       .getElementById("editForm")
       .addEventListener("submit", async function (e) {
@@ -356,7 +355,6 @@
         }
       });
 
-          // Event listener untuk tombol konfirmasi hapus
     document
       .getElementById("confirmDeleteBtn")
       .addEventListener("click", async function () {
@@ -408,7 +406,6 @@
     }
   }
 
-  // Panggil saat halaman dimuat
   document.addEventListener("DOMContentLoaded", loadLaporanPenjualan);
 
 
@@ -445,7 +442,6 @@
       }
     }
 
-    // Fungsi untuk membuka modal edit
     function openEditModal(id, nama, harga, jenis, deskripsi, gambar) {
       if (isModalOpen) return; // Cegah membuka modal jika sudah ada yang terbuka
 
@@ -461,13 +457,11 @@
       modal.style.display = "block";
       modal.classList.remove("hidden");
 
-      // Tambahkan smooth animation
       setTimeout(() => {
         modal.style.opacity = "1";
       }, 10);
     }
 
-    // Fungsi untuk menutup modal edit
     function closeEditModal() {
       const modal = document.getElementById("editModal");
       modal.style.opacity = "0";
@@ -480,7 +474,6 @@
       }, 200);
     }
 
-    // Fungsi untuk membuka modal konfirmasi hapus
     function openDeleteModal(id) {
       if (isModalOpen) return; // Cegah membuka modal jika sudah ada yang terbuka
 
@@ -491,13 +484,11 @@
       modal.style.display = "block";
       modal.classList.remove("hidden");
 
-      // Tambahkan smooth animation
       setTimeout(() => {
         modal.style.opacity = "1";
       }, 10);
     }
 
-    // Fungsi untuk menutup modal konfirmasi hapus
     function closeDeleteModal() {
       const modal = document.getElementById("deleteModal");
       modal.style.opacity = "0";
@@ -518,7 +509,6 @@
       document.getElementById(id).classList.remove("hidden");
     }
 
-    // Menutup modal saat klik di luar modal
     window.addEventListener("click", function (event) {
       const editModal = document.getElementById("editModal");
       const deleteModal = document.getElementById("deleteModal");
@@ -531,13 +521,11 @@
       }
     });
 
-    // Mencegah klik pada tombol saat modal terbuka
     document.addEventListener("click", function (event) {
       if (
         isModalOpen &&
         (event.target.matches("button") || event.target.matches("a"))
       ) {
-        // Izinkan klik pada tombol di dalam modal
         const editModal = document.getElementById("editModal");
         const deleteModal = document.getElementById("deleteModal");
 
@@ -550,7 +538,6 @@
         }
       }
     });
-     // Panggil fungsi saat halaman selesai dimuat
     window.addEventListener("DOMContentLoaded", loadMinuman);
   </script>
 </html>

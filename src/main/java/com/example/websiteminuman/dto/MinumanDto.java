@@ -15,7 +15,6 @@ public class MinumanDto {
 
     
     public MinumanDto() {
-        // Default constructor
     }
     public String getNama() {
         return nama;

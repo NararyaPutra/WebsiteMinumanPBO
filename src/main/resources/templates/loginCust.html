@@ -190,14 +190,11 @@
           body: formData
         });
 
-        // Asumsikan backend mengembalikan JSON
         const data = await response.json();
 
         if (data.success) {
-          // Login berhasil, redirect manual dari JS
           window.location.href = '/menu';
         } else {
-          // Tampilkan pesan error
           alert(data.message || 'Login gagal');
         }
         return false;

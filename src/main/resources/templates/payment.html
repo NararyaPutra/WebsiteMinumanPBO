@@ -57,10 +57,8 @@
 
         document.getElementById("confirm-payment").addEventListener("click", function (e) {
           e.preventDefault();
-          // Ambil data
           const metode = sessionStorage.getItem("paymentMethod") || "cash";
           const totalHarga = sessionStorage.getItem("totalHarga") || "IDR 0K";
-          // Ambil angka saja dari totalHarga
           const nominal = parseInt(totalHarga.replace(/\D/g, "")) * 1000;
 
           fetch("/auth/customer/payment", {

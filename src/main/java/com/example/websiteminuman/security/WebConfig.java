@@ -1,18 +1,19 @@
-// package com.example.websiteminuman.security;
-// import org.springframework.beans.factory.annotation.Autowired;
-// import org.springframework.context.annotation.Configuration;
-// import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
-// import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+package com.example.websiteminuman.security;
 
-// @Configuration
-// public class WebConfig implements WebMvcConfigurer {
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
-//     @Autowired
-//     private BoundaryInterceptor boundaryInterceptor;
+@Configuration
+public class WebConfig implements WebMvcConfigurer {
 
-//     @Override
-//     public void addInterceptors(InterceptorRegistry registry) {
-//         registry.addInterceptor(boundaryInterceptor)
-//                 .addPathPatterns("/admin/**", "/customer/**");
-//     }
-// }
+	@Autowired
+	private BoundaryInterceptor boundaryInterceptor;
+
+	@Override
+	public void addInterceptors(InterceptorRegistry registry) {
+		registry.addInterceptor(boundaryInterceptor)
+				.addPathPatterns("/admin/**", "/customer/**");
+	}
+}
