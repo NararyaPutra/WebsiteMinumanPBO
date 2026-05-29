@@ -37,157 +37,209 @@
     </div>
 
     <!-- Cart Summary -->
-    <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-      <div class="space-y-6">
-        <div class="flex justify-between items-center">
-          <span class="text-lg font-semibold">Total Harga:</span>
-          <span class="text-2xl font-bold text-cola-gold" id="total-price">IDR 71K</span>
-        </div>
-
-        <div class="border-t border-gray-700 pt-4">
-          <label class="block text-sm font-medium mb-2">Metode Pembayaran:</label>
-          <select id="payment-method"
-            class="payment-method w-full bg-gray-800 text-white px-4 py-3 rounded-lg border border-gray-600 focus:border-cola-gold focus:outline-none">
-            <option value="">Pilih metode pembayaran</option>
-            <option value="Cash">Cash</option>
-            <option value="Credit Card">Credit Card</option>
-            <option value="Debit Card">Debit Card</option>
-            <option value="Dana">DANA</option>
-            <option value="Ovo">OVO</option>
-            <option value="Gopay">GoPay</option>
-            <option value="Bank Transfer">Bank Transfer</option>
-          </select>
-        </div>
-
-        <div class="pt-4">
-          <button id="pay-now"
-            class="w-full block text-center bg-gradient-to-r from-cola-red to-cola-dark hover:from-cola-dark hover:to-red-800 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg text-lg">
-            BAYAR SEKARANG
-          </button>
-
-        </div>
-
-        <div class="pt-2">
-          <a href="/menu"
-            class="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
-            Kembali ke Menu
-          </a>
-        </div>
-      </div>
+   <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+  <div class="space-y-6">
+    <div class="flex justify-between items-center">
+      <span class="text-lg font-semibold">Total Harga:</span>
+      <span class="text-2xl font-bold text-cola-gold" id="total-price">IDR 0</span>
     </div>
+
+    <div class="pt-4">
+      <button id="pay-now"
+        class="w-full block text-center bg-gradient-to-r from-cola-red to-cola-dark hover:from-cola-dark hover:to-red-800 text-white font-bold py-4 px-6 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg text-lg">
+        BAYAR SEKARANG
+      </button>
+    </div>
+
+    <div class="pt-2">
+      <a href="/menu"
+        class="block w-full text-center bg-gray-700 hover:bg-gray-600 text-white font-medium py-3 px-6 rounded-lg transition-colors">
+        Kembali ke Menu
+      </a>
+    </div>
+  </div>
+</div>
 
   </div>
   </div>
 
   <!-- Script JavaScript -->
-  <script>
-    function updateTotalPrice(cartItems) {
-      let total = 0;
-      cartItems.forEach((item) => {
-        if (item.minuman && item.minuman.harga) {
-          total += item.minuman.harga; // Tidak perlu dikali quantity
-        }
-      });
-      document.getElementById("total-price").textContent =
-        "IDR " + Math.floor(total / 1000) + "K";
+ <script src="https://app.sandbox.midtrans.com/snap/snap.js"
+        data-client-key="Mid-client-GzM2qrybpYxp0THP"></script>
+
+<script>
+  let currentTotalAmount = 0;
+  let currentCartItems = [];
+
+  function formatIDR(value) {
+    return new Intl.NumberFormat("id-ID").format(value || 0);
+  }
+
+  function updateTotalPrice(cartItems) {
+    let total = 0;
+    cartItems.forEach((item) => {
+      if (item.minuman && item.minuman.harga) {
+        total += Number(item.minuman.harga);
+      }
+    });
+    currentTotalAmount = total;
+    document.getElementById("total-price").textContent = "IDR " + formatIDR(total);
+  }
+
+  async function clearCartAfterPayment() {
+    const ids = (currentCartItems || []).map(i => i.id).filter(Boolean);
+    if (!ids.length) return;
+
+    const tasks = ids.map((id) =>
+      fetch(`/auth/customer/cart/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+    );
+
+    await Promise.allSettled(tasks);
+  }
+
+  async function savePaymentToHistory(totalAmount) {
+    const body = new URLSearchParams({
+      metode: "Midtrans",
+      nominal: String(Math.round(totalAmount))
+    });
+
+    const res = await fetch("/auth/customer/payment", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      credentials: "include",
+      body: body.toString()
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.success) {
+      throw new Error(data?.message || "Gagal menyimpan payment/history");
     }
+  }
 
-    document.addEventListener("DOMContentLoaded", function () {
-      const cartContainer = document.querySelector(".cart-items");
+  document.addEventListener("DOMContentLoaded", function () {
+    const cartContainer = document.querySelector(".cart-items");
 
-      fetch("/auth/customer/cart")
-        .then((response) => response.json())
-        .then((cartItems) => {
-          if (cartItems.length === 0) {
-            cartContainer.innerHTML = "<p class='text-gray-400'>Keranjang kosong.</p>";
-            document.getElementById("total-price").textContent = "IDR 0K";
-            return;
-          }
+    fetch("/auth/customer/cart", { credentials: "include" })
+      .then((response) => response.json())
+      .then((cartItems) => {
+        currentCartItems = cartItems || [];
 
-          cartContainer.innerHTML = cartItems
-            .map(
-              (item) => `
+        if (!cartItems || cartItems.length === 0) {
+          cartContainer.innerHTML = "<p class='text-gray-400'>Keranjang kosong.</p>";
+          currentTotalAmount = 0;
+          document.getElementById("total-price").textContent = "IDR 0";
+          return;
+        }
+
+        cartContainer.innerHTML = cartItems.map((item) => `
           <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
             <div class="flex items-center justify-between">
               <div class="flex items-center space-x-4">
                 <div class="w-16 h-16 rounded-full overflow-hidden bg-gray-800">
                   <img
-                    src="${item.minuman.gambar || ''}" 
-                    alt="${item.minuman.nama || 'Minuman'}" 
+                    src="${item.minuman?.gambar || ''}" 
+                    alt="${item.minuman?.nama || 'Minuman'}" 
                     class="w-full h-full object-cover"
                   />
                 </div>
                 <div>
-                  <h3 class="text-xl font-semibold text-cola-gold">${item.minuman.nama || 'Tidak diketahui'}</h3>
-                  <p class="text-gray-400 text-sm">IDR ${item.minuman.harga || 0}</p>
+                  <h3 class="text-xl font-semibold text-cola-gold">${item.minuman?.nama || 'Tidak diketahui'}</h3>
+                  <p class="text-gray-400 text-sm">IDR ${formatIDR(item.minuman?.harga || 0)}</p>
                 </div>
               </div>
               <div class="flex items-center space-x-4">
                 <button 
                   class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition"
-                  onclick="deleteCartItem(${item.id})"
-                >
+                  onclick="deleteCartItem(${item.id})">
                   Hapus
                 </button>
               </div>
             </div>
           </div>
-        `
-            )
-            .join("");
+        `).join("");
 
-          updateTotalPrice(cartItems);
+        updateTotalPrice(cartItems);
+      })
+      .catch((err) => {
+        console.error("Gagal memuat keranjang:", err);
+        cartContainer.innerHTML = "<p class='text-red-500'>Gagal memuat keranjang.</p>";
+        currentTotalAmount = 0;
+        document.getElementById("total-price").textContent = "IDR 0";
+      });
+
+    const payNowButton = document.getElementById("pay-now");
+    if (payNowButton) {
+      payNowButton.addEventListener("click", async function () {
+        if (!currentCartItems.length || currentTotalAmount <= 0) {
+          alert("Keranjang masih kosong.");
+          return;
+        }
+
+        try {
+          const res = await fetch("/api/payments/snap-token", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+            body: JSON.stringify({
+              amount: currentTotalAmount,
+              name: "Customer",
+              email: "customer@mail.com",
+              phone: "08123456789"
+            })
+          });
+
+          if (!res.ok) throw new Error("Gagal membuat token pembayaran");
+          const data = await res.json();
+
+          window.snap.pay(data.snapToken, {
+            onSuccess: async function () {
+              await savePaymentToHistory(currentTotalAmount);
+              alert("Pembayaran berhasil.");
+              window.location.href = "/customer/paymentSuccess";
+            },
+            onPending: function () {
+              alert("Pembayaran pending.");
+            },
+            onError: function () {
+              alert("Pembayaran gagal.");
+            },
+            onClose: function () {
+              console.log("Popup pembayaran ditutup.");
+            }
+          });
+        } catch (e) {
+          console.error(e);
+          alert("Gagal memproses pembayaran.");
+        }
+      });
+    }
+  });
+
+  function deleteCartItem(cartId) {
+    if (confirm("Apakah Anda yakin ingin menghapus item ini dari keranjang?")) {
+      fetch(`/auth/customer/cart/${cartId}`, {
+        method: "DELETE",
+        credentials: "include",
+      })
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.success) {
+            alert(data.message);
+            location.reload();
+          } else {
+            alert("Gagal menghapus item: " + data.message);
+          }
         })
         .catch((err) => {
-          console.error("Gagal memuat keranjang:", err);
-          cartContainer.innerHTML = "<p class='text-red-500'>Gagal memuat keranjang.</p>";
-          document.getElementById("total-price").textContent = "IDR 0K";
+          console.error("Error saat menghapus item:", err);
+          alert("Terjadi kesalahan saat menghapus item.");
         });
-    });
-
-    document.addEventListener("DOMContentLoaded", function () {
-      const payNowButton = document.getElementById("pay-now");
-      const paymentSelect = document.getElementById("payment-method");
-
-      if (payNowButton && paymentSelect) {
-        payNowButton.addEventListener("click", function () {
-          const selectedMethod = paymentSelect.value;
-          if (!selectedMethod) {
-            alert("Silakan pilih metode pembayaran terlebih dahulu!");
-          } else {
-            const totalPriceText = document.getElementById("total-price").textContent;
-            sessionStorage.setItem("totalHarga", totalPriceText);
-            sessionStorage.setItem("paymentMethod", selectedMethod);
-            window.location.href = "/customer/payment";
-          }
-        });
-      }
-    });
-
-    function deleteCartItem(cartId) {
-      if (confirm("Apakah Anda yakin ingin menghapus item ini dari keranjang?")) {
-        fetch(`/auth/customer/cart/${cartId}`, {
-          method: "DELETE",
-          credentials: 'include',
-        })
-          .then((response) => response.json())
-          .then((data) => {
-            if (data.success) {
-              alert(data.message);
-              location.reload(); // Refresh halaman setelah item dihapus
-            } else {
-              alert("Gagal menghapus item: " + data.message);
-            }
-          })
-          .catch((err) => {
-            console.error("Error saat menghapus item:", err);
-            alert("Terjadi kesalahan saat menghapus item.");
-          });
-      }
     }
-
-    updateTotalPrice();
-  </script>
+  }
+</script>
 </body>
 
 </html>
