@@ -95,6 +95,9 @@ public class CustomerController {
 			session.setAttribute("customerId", customer.getId());
 			result.put("success", true);
 			result.put("message", "Login berhasil! Selamat datang " + customer.getUsername());
+			result.put("customerId", customer.getId());
+			result.put("username", customer.getUsername());
+			result.put("email", customer.getEmail());
 		} catch (Exception e) {
 			result.put("success", false);
 			result.put("message", "Login gagal: " + e.getMessage());
@@ -130,6 +133,55 @@ public class CustomerController {
 		}
 	}
 
+	@PostMapping("/coba/register/api")
+	@ResponseBody
+	public Map<String, Object> registerCustomerApi(
+			@RequestParam String username,
+			@RequestParam String email,
+			@RequestParam String password) {
+		Map<String, Object> result = new HashMap<>();
+		try {
+			if (username == null || username.trim().isEmpty()) {
+				result.put("success", false);
+				result.put("message", "Username tidak boleh kosong");
+				return result;
+			}
+
+			if (email == null || email.trim().isEmpty()) {
+				result.put("success", false);
+				result.put("message", "Email tidak boleh kosong");
+				return result;
+			}
+
+			if (password.length() < 8) {
+				result.put("success", false);
+				result.put("message", "Password minimal 8 karakter");
+				return result;
+			}
+
+			if (customerRepository.existsByEmail(email)) {
+				result.put("success", false);
+				result.put("message", "Email sudah terdaftar");
+				return result;
+			}
+
+			CustomerDto customerDto = new CustomerDto();
+			customerDto.setUsername(username);
+			customerDto.setEmail(email);
+			customerDto.setPassword(passwordEncoder.encode(password));
+
+			var customer = customerMapper.toEntity(customerDto);
+			customerRepository.save(customer);
+
+			result.put("success", true);
+			result.put("message", "Registrasi berhasil, silakan login");
+		} catch (Exception e) {
+			result.put("success", false);
+			result.put("message", "Registrasi gagal: " + e.getMessage());
+		}
+		return result;
+	}
+
 	@PostMapping("/logout")
 	public String logoutCustomer(HttpServletRequest request, RedirectAttributes redirectAttributes) {
 		HttpSession session = request.getSession(false);
@@ -152,17 +204,32 @@ public class CustomerController {
 
 	@PostMapping("/coba/add")
 	@ResponseBody
-	public Map<String, Object> addTocart(@RequestParam Long minumanId, RedirectAttributes redirectAttributes,
+	public Map<String, Object> addTocart(
+			@RequestParam Long minumanId, 
+			@RequestParam(required = false) Long customerId,
+			RedirectAttributes redirectAttributes,
 			HttpServletRequest request) {
 		Map<String, Object> result = new java.util.HashMap<>();
-		String email = (String) request.getSession().getAttribute("customerEmail");
-		if (email == null) {
+		
+		if (customerId == null) {
+			Object idObj = request.getSession().getAttribute("customerId");
+			if (idObj instanceof Integer) {
+				customerId = ((Integer) idObj).longValue();
+			} else if (idObj instanceof Long) {
+				customerId = (Long) idObj;
+			} else if (idObj instanceof String) {
+				customerId = Long.valueOf((String) idObj);
+			}
+		}
+
+		if (customerId == null) {
 			result.put("success", false);
 			result.put("message", "Anda harus login terlebih dahulu");
 			result.put("redirect", "/loginCust");
 			return result;
 		}
-		var customer = customerRepository.findByEmail(email);
+
+		var customer = customerRepository.findById(customerId).orElse(null);
 		if (customer == null) {
 			result.put("success", false);
 			result.put("message", "Customer tidak ditemukan");
@@ -177,16 +244,8 @@ public class CustomerController {
 			result.put("redirect", "/menu");
 			return result;
 		}
-		Object idObj = request.getSession().getAttribute("customerId");
-		Long customerId = null;
-		if (idObj instanceof Integer) {
-			customerId = ((Integer) idObj).longValue();
-		} else if (idObj instanceof Long) {
-			customerId = (Long) idObj;
-		} else if (idObj instanceof String) {
-			customerId = Long.valueOf((String) idObj);
-		}
-		System.out.println("DEBUG: customerId from session = " + customerId);
+
+		System.out.println("DEBUG: customerId = " + customerId);
 		Cart cart = new Cart();
 		cart.setCustomerId(customerId);
 		cart.setMinumanId(minumanId);
@@ -198,16 +257,21 @@ public class CustomerController {
 
 	@GetMapping("/cart")
 	@ResponseBody
-	public List<Map<String, Object>> getCartItems(HttpServletRequest request) {
-		Object idObj = request.getSession().getAttribute("customerId");
-		Long customerId = null;
-		if (idObj instanceof Integer) {
-			customerId = ((Integer) idObj).longValue();
-		} else if (idObj instanceof Long) {
-			customerId = (Long) idObj;
-		} else if (idObj instanceof String) {
-			customerId = Long.valueOf((String) idObj);
+	public List<Map<String, Object>> getCartItems(
+			@RequestParam(required = false) Long customerId,
+			HttpServletRequest request) {
+		
+		if (customerId == null) {
+			Object idObj = request.getSession().getAttribute("customerId");
+			if (idObj instanceof Integer) {
+				customerId = ((Integer) idObj).longValue();
+			} else if (idObj instanceof Long) {
+				customerId = (Long) idObj;
+			} else if (idObj instanceof String) {
+				customerId = Long.valueOf((String) idObj);
+			}
 		}
+
 		if (customerId == null) {
 			throw new RuntimeException("Anda harus login terlebih dahulu.");
 		}
@@ -231,16 +295,22 @@ public class CustomerController {
 
 	@DeleteMapping("/cart/{cartId}")
 	@ResponseBody
-	public Map<String, Object> deleteCartItem(@PathVariable Long cartId, HttpServletRequest request) {
-		Object idObj = request.getSession().getAttribute("customerId");
-		Long customerId = null;
-		if (idObj instanceof Integer) {
-			customerId = ((Integer) idObj).longValue();
-		} else if (idObj instanceof Long) {
-			customerId = (Long) idObj;
-		} else if (idObj instanceof String) {
-			customerId = Long.valueOf((String) idObj);
+	public Map<String, Object> deleteCartItem(
+			@PathVariable Long cartId, 
+			@RequestParam(required = false) Long customerId,
+			HttpServletRequest request) {
+		
+		if (customerId == null) {
+			Object idObj = request.getSession().getAttribute("customerId");
+			if (idObj instanceof Integer) {
+				customerId = ((Integer) idObj).longValue();
+			} else if (idObj instanceof Long) {
+				customerId = (Long) idObj;
+			} else if (idObj instanceof String) {
+				customerId = Long.valueOf((String) idObj);
+			}
 		}
+
 		if (customerId == null) {
 			throw new RuntimeException("Anda harus login terlebih dahulu.");
 		}
@@ -265,16 +335,20 @@ public class CustomerController {
 	public Map<String, Object> savePayment(
 			@RequestParam String metode,
 			@RequestParam Integer nominal,
+			@RequestParam(required = false) Long customerId,
 			HttpServletRequest request) {
-		Object idObj = request.getSession().getAttribute("customerId");
-		Long customerId = null;
-		if (idObj instanceof Integer) {
-			customerId = ((Integer) idObj).longValue();
-		} else if (idObj instanceof Long) {
-			customerId = (Long) idObj;
-		} else if (idObj instanceof String) {
-			customerId = Long.valueOf((String) idObj);
+		
+		if (customerId == null) {
+			Object idObj = request.getSession().getAttribute("customerId");
+			if (idObj instanceof Integer) {
+				customerId = ((Integer) idObj).longValue();
+			} else if (idObj instanceof Long) {
+				customerId = (Long) idObj;
+			} else if (idObj instanceof String) {
+				customerId = Long.valueOf((String) idObj);
+			}
 		}
+
 		Map<String, Object> result = new HashMap<>();
 		if (customerId == null) {
 			result.put("success", false);
@@ -309,16 +383,21 @@ public class CustomerController {
 
 	@GetMapping("/history")
 	@ResponseBody
-	public List<Map<String, Object>> getHistory(HttpServletRequest request) {
-		Object idObj = request.getSession().getAttribute("customerId");
-		Long customerId = null;
-		if (idObj instanceof Integer) {
-			customerId = ((Integer) idObj).longValue();
-		} else if (idObj instanceof Long) {
-			customerId = (Long) idObj;
-		} else if (idObj instanceof String) {
-			customerId = Long.valueOf((String) idObj);
+	public List<Map<String, Object>> getHistory(
+			@RequestParam(required = false) Long customerId,
+			HttpServletRequest request) {
+		
+		if (customerId == null) {
+			Object idObj = request.getSession().getAttribute("customerId");
+			if (idObj instanceof Integer) {
+				customerId = ((Integer) idObj).longValue();
+			} else if (idObj instanceof Long) {
+				customerId = (Long) idObj;
+			} else if (idObj instanceof String) {
+				customerId = Long.valueOf((String) idObj);
+			}
 		}
+
 		List<Map<String, Object>> result = new ArrayList<>();
 		if (customerId == null)
 			return result;
