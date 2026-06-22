@@ -14,7 +14,7 @@ public interface HistoryRepository extends JpaRepository<History, Long> {
 			FROM (
 				SELECT CAST(h.tanggal AS DATE) AS tanggal, p.id AS payment_id, p.nominal
 				FROM history h
-				JOIN payment p ON h.paymentId = p.id
+				JOIN payment p ON h.payment_id = p.id
 				GROUP BY CAST(h.tanggal AS DATE), p.id, p.nominal
 			) l
 			GROUP BY l.tanggal
