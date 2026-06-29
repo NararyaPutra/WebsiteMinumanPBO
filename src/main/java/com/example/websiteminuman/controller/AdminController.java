@@ -1,5 +1,17 @@
 package com.example.websiteminuman.controller;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.example.websiteminuman.dto.AdminDto;
@@ -10,26 +22,12 @@ import com.example.websiteminuman.entities.History;
 import com.example.websiteminuman.entities.Minuman;
 import com.example.websiteminuman.mapper.AdminMapper;
 import com.example.websiteminuman.mapper.MinumanMapper;
-
-import java.util.List;
-import java.util.stream.Collectors;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import com.example.websiteminuman.repositories.AdminRepository;
 import com.example.websiteminuman.repositories.HistoryRepository;
 import com.example.websiteminuman.repositories.MinumanRepository;
 import com.example.websiteminuman.service.AdminAuthService;
 
 import jakarta.servlet.http.HttpSession;
-
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 
 @RestController
 @RequestMapping("/auth/admin")
@@ -96,13 +94,9 @@ public class AdminController {
     public ResponseEntity<?> createMinuman(@RequestBody MinumanDto dto,
             HttpSession session) {
         try {
-            String username = (String) session.getAttribute("username");
-            if (username == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Belum login");
-            }
-
-            Admin admin = adminRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Admin tidak ditemukan"));
+            // Bypass session check karena Flutter tidak mengirim session cookie (stateless)
+            Admin admin = adminRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("Admin tidak ditemukan di database"));
 
             Minuman minuman = minumanMapper.toEntity(dto);
             minuman.setAdmin(admin);
@@ -120,13 +114,8 @@ public class AdminController {
             @RequestBody MinumanDto dto,
             HttpSession session) {
         try {
-            String username = (String) session.getAttribute("username");
-            if (username == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Belum login");
-            }
-
-            Admin admin = adminRepository.findByUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Admin tidak ditemukan"));
+            Admin admin = adminRepository.findAll().stream().findFirst()
+                    .orElseThrow(() -> new RuntimeException("Admin tidak ditemukan di database"));
 
             Minuman existingMinuman = minumanRepository.findById(id)
                     .orElse(null);
@@ -160,11 +149,7 @@ public class AdminController {
             List<History> history = historyRepository.findByMinumanId(minuman.getId());
             historyRepository.deleteAll(history);
             minumanRepository.delete(minuman);
-            String username = (String) session.getAttribute("username");
-            if (username == null) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-            }
-            System.out.println("MINUMAN DELETED BY: " + username);
+            System.out.println("MINUMAN DELETED BY: bypass-admin");
             return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(null);
